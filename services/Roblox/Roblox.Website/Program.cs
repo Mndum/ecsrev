@@ -44,6 +44,7 @@ Roblox.Configuration.EconomyChatBundleDirectory = configuration.GetSection("Dire
 Roblox.Configuration.BaseUrl = configuration.GetSection("BaseUrl").Value;
 Roblox.Configuration.HCaptchaPublicKey = configuration.GetSection("HCaptcha:Public").Value;
 Roblox.Configuration.HCaptchaPrivateKey = configuration.GetSection("HCaptcha:Private").Value;
+Roblox.Configuration.CaptchaDisabled = configuration.GetSection("HCaptcha:Disabled").Value == "true";
 Roblox.Configuration.GameServerAuthorization = configuration.GetSection("GameServerAuthorization").Value;
 Roblox.Configuration.BotAuthorization = configuration.GetSection("BotAuthorization").Value;
 // game-server config stuff
@@ -179,6 +180,15 @@ app.UseEndpoints(e =>
     e.MapHub<ChatHub>("/chat");
     e.MapControllers();
     e.MapRazorPages();
+});
+
+// Creates the owner/system accounts on a fresh install. Runs in the background because avatar rendering
+// (which needs the optional render service) can take a while to time out.
+var bootstrapOwnerPassword = configuration.GetSection("Bootstrap:OwnerPassword").Value;
+_ = Task.Run(async () =>
+{
+    try { await Roblox.Website.Lib.Bootstrap.Run(bootstrapOwnerPassword); }
+    catch (Exception e) { Console.WriteLine("[bootstrap] failed: " + e); }
 });
 
 app.Run();

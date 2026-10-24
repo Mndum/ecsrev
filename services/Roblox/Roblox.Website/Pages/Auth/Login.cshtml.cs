@@ -110,7 +110,7 @@ public class Login : RobloxPageModel
             return new PageResult();
         }
 
-        if (string.IsNullOrEmpty(hCaptchaResponse))
+        if (!Roblox.Configuration.CaptchaDisabled && string.IsNullOrEmpty(hCaptchaResponse))
         {
             errorMessage = BadCaptchaMessage;
             return new PageResult();

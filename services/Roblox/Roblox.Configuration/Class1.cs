@@ -24,6 +24,8 @@ public static class Configuration
     public static string BaseUrl { get; set; }
     public static string HCaptchaPublicKey { get; set; }
     public static string HCaptchaPrivateKey { get; set; }
+    // Self-hosted servers can run without hCaptcha (set HCaptcha:Disabled to "true" in appsettings.json).
+    public static bool CaptchaDisabled { get; set; }
     public static IEnumerable<GameServerConfigEntry> GameServerIpAddresses { get; set; }
     public static string GameServerAuthorization { get; set; }
     public static string RobloxAppPrefix { get; set; } = "rbxeconsim:";

@@ -1,0 +1,118 @@
+# Economy Simulator - self-hosting stack. Manage it with:  python3 ecs.py
+name: ecs
+
+x-env: &env
+  PUBLIC_URL: ${PUBLIC_URL}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_USER: ecs
+  POSTGRES_DB: ecs
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ecs
+      POSTGRES_DB: ecs
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecs -d ecs"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      dockerfile: deploy/migrate.Dockerfile
+    environment: *env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # The .NET website. Everything public goes through this service (port 5000);
+  # it proxies page requests to the frontend and serves the API + admin panel.
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *env
+      JWT_SECRET: ${JWT_SECRET}
+      INTERNAL_AUTH: ${INTERNAL_AUTH}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:-}
+      HCAPTCHA_SITEKEY: ${HCAPTCHA_SITEKEY:-}
+      HCAPTCHA_SECRET: ${HCAPTCHA_SECRET:-}
+    volumes:
+      - site-data:/data
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-5000}:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # The two services below share the web container's network namespace because the
+  # website talks to them on localhost (frontend :3000, asset validation :4300).
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/frontend.Dockerfile
+    restart: unless-stopped
+    network_mode: "service:web"
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}
+      CSRF_KEY: ${CSRF_KEY}
+    depends_on:
+      - web
+
+  asset-validation:
+    build:
+      context: .
+      dockerfile: deploy/avs.Dockerfile
+    restart: unless-stopped
+    network_mode: "service:web"
+    depends_on:
+      - web
+
+  # Optional HTTPS reverse proxy (automatic Let's Encrypt certificates). Enable with:  python3 ecs.py start --https
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["https"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+volumes:
+  db-data:
+  redis-data:
+  site-data:
+  caddy-data:
+  caddy-config:

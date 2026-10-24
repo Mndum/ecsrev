@@ -1053,8 +1053,22 @@ public class UsersService : ServiceBase, IService
         });
         // Render outside transaction to prevent deadlock/unnecessary locks
 #if !DEBUG
-        using var av = ServiceProvider.GetOrCreate<AvatarService>();
-        await av.RedrawAvatar(result.userId, Roblox.Configuration.SignupAvatarAssetIds);
+        // Don't make signup wait for the render service. If it is slow or not running (it is optional for
+        // self-hosting), the account is still usable and the thumbnail is drawn when rendering becomes available.
+        var newUserId = result.userId;
+        var signupAvatarAssetIds = Roblox.Configuration.SignupAvatarAssetIds;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var av = ServiceProvider.GetOrCreate<AvatarService>();
+                await av.RedrawAvatar(newUserId, signupAvatarAssetIds);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("[info] Signup avatar render for user {0} failed: {1}", newUserId, e.Message);
+            }
+        });
 #endif
         return result;
     }

@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/bin
+**/obj
+**/.next
+services/api/storage
+services/RCCService
+services/game-server
+services/asset-backup
+services/table-generator
+services/web

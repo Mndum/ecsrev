@@ -14,6 +14,8 @@ public class HCaptcha
     private static HttpClient client { get; } = new();
     public static async Task<bool> IsValid(string rawIpAddress, string captchaResponse)
     {
+        if (Roblox.Configuration.CaptchaDisabled)
+            return true;
         try
         {
             var cont = new FormUrlEncodedContent(new Dictionary<string,string>

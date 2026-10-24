@@ -64,7 +64,7 @@ const NavigationLinks = props => {
         <LinkEntry url='games'>Games</LinkEntry>
         <LinkEntry url='catalog'>Catalog</LinkEntry>
         <LinkEntry url='develop'>Develop</LinkEntry>
-        <LinkEntry url='robux.aspx'>ROBUX</LinkEntry>
+        <LinkEntry url='My/Money.aspx'>ROBUX</LinkEntry>
       </div>
     </div>
   </div>

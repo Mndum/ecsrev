@@ -23,6 +23,6 @@ COPY services/Roblox/Roblox.Libraries/Templates /app-data/templates
 COPY services/Roblox/Roblox.Libraries/Json /app-data/json
 COPY services/api/public /app-data/public-seed
 COPY deploy/web-entrypoint.sh /usr/local/bin/web-entrypoint.sh
-RUN chmod +x /usr/local/bin/web-entrypoint.sh && mkdir -p /app-data/economy-chat /data
+RUN sed -i "s/\r$//" /usr/local/bin/web-entrypoint.sh && chmod +x /usr/local/bin/web-entrypoint.sh && mkdir -p /app-data/economy-chat /data
 EXPOSE 5000
 ENTRYPOINT ["/usr/local/bin/web-entrypoint.sh"]
